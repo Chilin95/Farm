@@ -1,0 +1,28 @@
+{
+  "name": "farm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Chilin95/Farm.git"
+  },
+  "author": "Chilin95",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Chilin95/Farm/issues"
+  },
+  "homepage": "https://github.com/Chilin95/Farm#readme",
+  "dependencies": {
+    "@discordjs/opus": "^0.3.2",
+    "discord.js": "^12.3.1",
+    "eslint": "^7.9.0",
+    "ffmpeg-static": "^4.2.7"
+  },
+  "devDependencies": {
+    "opusscript": "0.0.7"
+  }
+}

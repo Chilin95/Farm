@@ -18,9 +18,14 @@
   "homepage": "https://github.com/Chilin95/Farm#readme",
   "dependencies": {
     "@discordjs/opus": "^0.3.2",
+    "bufferutil": "^4.0.1",
     "discord.js": "^12.3.1",
+    "erlpack": "github:discord/erlpack",
     "eslint": "^7.9.0",
-    "ffmpeg-static": "^4.2.7"
+    "ffmpeg-static": "^4.2.7",
+    "libsodium-wrappers": "^0.7.8",
+    "nodemon": "^2.0.4",
+    "zlib-sync": "^0.1.7"
   },
   "devDependencies": {
     "opusscript": "0.0.7"

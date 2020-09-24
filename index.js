@@ -128,7 +128,7 @@ client.on('voiceStateUpdate', (oldState, newState)=>{
 
 });
 
-let tempStream = fs.createReadStream('./audios/writeTemp');
+let tempStream;
 record.audioWriteStream.on('unpipe', (tempReadStream)=>{
 	try {
 		record.audioWriteStream.write(tempReadStream.read());

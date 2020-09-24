@@ -22,29 +22,7 @@ client.once('ready', () => {
 	console.log('Ready!');
 });
 //Promise功能用起来，录音+Help
-
-client.on('message', async message => {
-
-	const voiceChannel = message.member.voice.channel;
-	// Join the same voice channel of the author of the message
-	if (voiceChannel && message.content === '!join') {
-		const connection = await voiceChannel.join();
-		const audio = connection.receiver.createStream(message.author, { mode: 'pcm' });
-		audio.pipe(fs.createWriteStream('user_audio'));
-		
-	}
-
-	if (message.content === '!over') {
-		console.log('Agumon just leaved the vioce channel!');
-		try {
-			voiceChannel.leave();
-		}
-		catch (error) {
-			console.error(error);
-			message.reply('there was an error trying to leave that channel!');
-		}
-	}
-});
+//第三方装饰器库：npm install core-decorators
 
 client.on('message', message => {
 	if (!message.content.startsWith(prefix) || message.author.bot) return;
@@ -111,6 +89,55 @@ client.on('message', message => {
 		message.reply('there was an error trying to execute that command!');
 	}
 
+});
+
+const record = require('./commands/r.js');
+const audioReadStream = require('./fun/audioReadStream.js');
+
+client.on('voiceStateUpdate', (oldState, newState)=>{
+	//把刚进入语音房的成员禁麦
+	if(record.voiceChannelID!=='' &&
+		oldState.channelID!==record.voiceChannelID &&
+		newState.channelID===record.voiceChannelID) {
+			try {
+				newState.selfMute = true;
+			} catch (error) {
+				console.log(error);
+			}
+		}
+	//member打开mac，创建readStream
+	if(record.voiceConnection && newState.channelID===record.voiceChannelID &&
+		oldState.selfMute && !newState.selfMute){
+			try {
+				audioReadStream.createAudioStream(newState);
+			} catch (error) {
+				console.log(error);
+			}
+	}
+	//关闭mac，销毁对应用户的readStream
+	if(record.voiceConnection && newState.channelID===record.voiceChannelID &&
+		!oldState.selfMute && newState.selfMute){
+			try {
+				audioReadStream.pauseAudioStream(newState.id);
+			} catch (error) {
+				console.log(error);
+			}
+	}
+
+});
+
+let tempStream = fs.createReadStream('./index.js');
+record.audioWriteStream.on('unpipe', (tempReadStream)=>{
+	record.audioWriteStream.write(tempReadStream.read());
+	tempStream = tempReadStream;
+	tempReadStream.destroy();
+});
+record.audioWriteStream.once('drain', ()=>{
+	tempStream.destroy();
+});
+record.audioWriteStream.on('finish', ()=>{
+	record.audioWriteStream.destroy();
+	record.pcm2mp3();
 });
 
 client.login(config.token);

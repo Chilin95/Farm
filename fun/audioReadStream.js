@@ -1,19 +1,14 @@
-const record = require('./commands/r.js');
+const record = require('../commands/r.js');
 let readStreamMaps = new Map();
 module.exports = {
 	readStreamMaps,
 	createAudioStream(voiceState) {
         voiceState.guild.members.fetch(voiceState.id)
 			.then(audioMember =>{
-				try {
-					const audioReadStream = record.voiceConnection.receiver.createStream(audioMember.user, { mode: 'pcm', end: 'manual'});
-					readStreamMaps.set(voiceState.id, audioReadStream);
-					audioReadStream.pipe(record.audioWriteStream);
-				} catch (error) {
-					console.log(error);
-				}
-			})
-			.catch(console.error);
+				const audioReadStream = record.voiceConnection.receiver.createStream(audioMember.user, { mode: 'pcm', end: 'silence'});
+				readStreamMaps.set(voiceState.id, audioReadStream);
+				audioReadStream.pipe(record.audioWriteStream);
+			});
 	},
 	async pauseAudioStream(userId) {
 		const tempReadStream = readStreamMaps.get(userId);

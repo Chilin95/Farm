@@ -1,6 +1,6 @@
 const Lame = require('node-lame').Lame;
 const record = require('./r.js');
-const audioReadStream = require('./fun/audioReadStream.js');
+const audioReadStream = require('../fun/audioReadStream.js');
 module.exports = {
 	name: 's',
     description: 'Stop record!',
@@ -10,7 +10,7 @@ module.exports = {
     guildOnly: true,
 	async execute(message, args) {
 
-        if(!record.voiceConnection) {
+        if(typeof(record.voiceConnection) === 'undefined') {
             return message.channel.send('尚未开始录音！');
         }
         
@@ -50,6 +50,6 @@ function colseWriteStreams(){
         setTimeout(()=>{
             record.audioWriteStream.end();
             res();
-        }, 5000);
+        }, 10000);
     });
 }

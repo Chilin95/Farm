@@ -100,13 +100,14 @@ client.on('voiceStateUpdate', (oldState, newState)=>{
 		oldState.channelID!==record.voiceChannelID &&
 		newState.channelID===record.voiceChannelID) {
 			try {
-				newState.selfMute = true;
+				newState.setMute(true);
 			} catch (error) {
 				console.log(error);
 			}
 		}
 	//member打开mac，创建readStream
-	if(record.voiceConnection && newState.channelID===record.voiceChannelID &&
+	if(newState.channelID===record.voiceChannelID &&
+		typeof(record.voiceConnection)!== 'undefined' &&
 		oldState.selfMute && !newState.selfMute){
 			try {
 				audioReadStream.createAudioStream(newState);
@@ -115,7 +116,8 @@ client.on('voiceStateUpdate', (oldState, newState)=>{
 			}
 	}
 	//关闭mac，销毁对应用户的readStream
-	if(record.voiceConnection && newState.channelID===record.voiceChannelID &&
+	if(newState.channelID===record.voiceChannelID &&
+		typeof(record.voiceConnection)!== 'undefined' && 
 		!oldState.selfMute && newState.selfMute){
 			try {
 				audioReadStream.pauseAudioStream(newState.id);
@@ -126,18 +128,31 @@ client.on('voiceStateUpdate', (oldState, newState)=>{
 
 });
 
-let tempStream = fs.createReadStream('./index.js');
+let tempStream = fs.createReadStream('./audios/writeTemp');
 record.audioWriteStream.on('unpipe', (tempReadStream)=>{
-	record.audioWriteStream.write(tempReadStream.read());
-	tempStream = tempReadStream;
-	tempReadStream.destroy();
+	try {
+		record.audioWriteStream.write(tempReadStream.read());
+		tempStream = tempReadStream;
+		tempReadStream.destroy();
+	} catch (error) {
+		console.log(error);
+	}
+	
 });
 record.audioWriteStream.once('drain', ()=>{
-	tempStream.destroy();
+	try {
+		tempStream.destroy();
+	} catch (error) {
+		console.log(error);
+	}
 });
 record.audioWriteStream.on('finish', ()=>{
-	record.audioWriteStream.destroy();
-	record.pcm2mp3();
+	try {
+		record.audioWriteStream.destroy();
+		record.pcm2mp3();
+	} catch (error) {
+		console.log(error);
+	}
 });
 
 client.login(config.token);

@@ -1,5 +1,10 @@
+const fs = require('fs');
 const moment = require('moment');
 const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+
+let voiceChannelID = '';
+let voiceConnection;
+let audioWriteStream = fs.createWriteStream('./audios/writeTemp');
 module.exports = {
 	name: 'r',
     description: 'Record!',
@@ -7,7 +12,7 @@ module.exports = {
     args: false,
 	usage: '<user> <role>',
     guildOnly: true,
-    voiceChannelID: '',
+    voiceChannelID,
     voiceConnection,
     audioWriteStream,
 	async execute(message, args) {
@@ -17,7 +22,7 @@ module.exports = {
         voiceChannelID = voiceChannel.id;
         //当前语音房的所有禁麦
         voiceChannel.members.forEach(member => {
-            member[1].voice.selfMute = true;
+            member.voice.setSelfMute(true);
         });
         voiceConnection = await voiceChannel.join();
         message.channel.send('开始录音···');

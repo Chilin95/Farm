@@ -130,4 +130,6 @@ dmypy.json
 
 /node_modules
 /.vscode
-/audios
+/demo
+/draft
+config.json

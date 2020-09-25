@@ -44,8 +44,6 @@ client.on('message', message => {
 		});
 	}
 
-	
-
 	const command = client.commands.get(commandName)
 		|| client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
 
@@ -92,7 +90,7 @@ client.on('message', message => {
 });
 
 const record = require('./commands/r.js');
-const audioReadStream = require('./fun/audioReadStream.js');
+const audioReadStream = require('./function/audioReadStream.js');
 
 client.on('voiceStateUpdate', (oldState, newState)=>{
 	//把刚进入语音房的成员禁麦
@@ -125,7 +123,6 @@ client.on('voiceStateUpdate', (oldState, newState)=>{
 				console.log(error);
 			}
 	}
-
 });
 
 let tempStream;

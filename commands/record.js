@@ -17,6 +17,7 @@ module.exports = {
             return message.channel.send('The bot has not connected to any voice channel yet!');
         }
         
+        connection.play('../audios/init.mp3', { volume: 0.5 });
         message.channel.send('Start recording···');
         const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
         audioWriteStream = fs.createWriteStream(`./audios/${date}.pcm`);

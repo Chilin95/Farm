@@ -9,19 +9,18 @@ module.exports = {
 	guildOnly: true,
 	voiceChannel,
 	voiceConnection,
-	async execute(message, args2) {
+	execute(message, args2) {
 		voiceChannel = message.member.voice.channel;
 		if (!voiceChannel) {return message.channel.send('Please join in a voice channel first!')}
 		
-		try {
-			voiceConnection = await voiceChannel.join();
-		} catch (error) {
+		voiceChannel.join().then(con=>{
+			voiceConnection = con;
+			message.channel.send('The bot has connected to the voice channel...');
+			return;
+		}).catch(error=>{
 			console.log('连接失败，尝试再次连接...\n', error);
-			return this.execute(message, args2);
-		}
-		message.channel.send('The bot has connected to the voice channel···');
-
-		return voiceConnection.play('../audios/init.mp3', { volume: 0.5 });
+			message.channel.send('Connection timeout, please try again...');
+		});
 	},
 	getChannel(){return voiceChannel;},
 	getConnection(){return voiceConnection;},

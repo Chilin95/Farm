@@ -84,72 +84,9 @@ client.on('message', message => {
 	}
 	catch (error) {
 		console.error(error);
-		message.reply('there was an error trying to execute that command!');
+		message.reply('There was an error trying to execute that command!');
 	}
 
-});
-
-const record = require('./commands/r.js');
-const audioReadStream = require('./function/audioReadStream.js');
-
-client.on('voiceStateUpdate', (oldState, newState)=>{
-	//把刚进入语音房的成员禁麦
-	if(record.voiceChannelID!=='' &&
-		oldState.channelID!==record.voiceChannelID &&
-		newState.channelID===record.voiceChannelID) {
-			try {
-				newState.setMute(true);
-			} catch (error) {
-				console.log(error);
-			}
-		}
-	//member打开mac，创建readStream
-	if(newState.channelID===record.voiceChannelID &&
-		typeof(record.voiceConnection)!== 'undefined' &&
-		oldState.selfMute && !newState.selfMute){
-			try {
-				audioReadStream.createAudioStream(newState);
-			} catch (error) {
-				console.log(error);
-			}
-	}
-	//关闭mac，销毁对应用户的readStream
-	if(newState.channelID===record.voiceChannelID &&
-		typeof(record.voiceConnection)!== 'undefined' && 
-		!oldState.selfMute && newState.selfMute){
-			try {
-				audioReadStream.pauseAudioStream(newState.id);
-			} catch (error) {
-				console.log(error);
-			}
-	}
-});
-
-let tempStream;
-record.audioWriteStream.on('unpipe', (tempReadStream)=>{
-	try {
-		record.audioWriteStream.write(tempReadStream.read());
-		tempStream = tempReadStream;
-		tempReadStream.destroy();
-	} catch (error) {
-		console.log(error);
-	}
-	
-});
-record.audioWriteStream.once('drain', ()=>{
-	try {
-		tempStream.destroy();
-	} catch (error) {
-		console.log(error);
-	}
-});
-record.audioWriteStream.on('finish', ()=>{
-	try {
-		record.audioWriteStream.destroy();
-		record.pcm2mp3();
-	} catch (error) {
-		console.log(error);
-	}
 });
 
 client.login(config.token);

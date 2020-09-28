@@ -3,20 +3,39 @@ const Lame = require('node-lame').Lame;
 const join = require('./join.js');
 module.exports = {
 	name: 'stop',
-    description: 'Command the bot to stop recording.',
-    aliases: ['stop'],
+    description: 'Command the bot to stop recording or leave the voice channel.',
+    aliases: ['停止录音','leave'],
     args: false,
-	usage: `It\'s a guild only command. And it only works on a recording.`,
+	usage: `The command is guild only. And it only works while the bot is in a voice channel. For more usage information, look up the **join** command.`,
     guildOnly: true,
-	async execute(message, args) {
+	execute(message, args) {
+        channel = join.getChannel();
+        connection = join.getConnection();
+        console.log('停止录音\n', channel, connection);
 
-        voiceConnection = join.getConnection();
-        if(!voiceConnection) {
-            return message.channel.send('The robot has not started recording yet!');
+        if (join.getRecordStatus()) {
+            join.setRecordStatus(false);
+            connection.disconnect();
+            join.destroyConnection();
+            message.channel.send(`The bot has stopped recording and left ${channel.name} channel!`);
+            channel.leave();
+            join.destroyChannel();
+            return;
         }
-        
-        message.channel.send('Stop recording!');
-        return join.getChannel().leave();
+
+        if (channel) {
+            if (connection) {
+                connection.disconnect();
+                join.destroyConnection();
+            }
+            message.channel.send(`The bot has left ${channel.name} channel!`);
+            channel.leave();
+            join.destroyChannel();
+            return;
+        }
+        if (!channel) {
+            return message.channel.send('The command doesn\'t work while the bot has not joined in any voice channel yet!');
+        }
 	},
 };
 

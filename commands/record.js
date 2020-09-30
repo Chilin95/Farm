@@ -2,7 +2,9 @@ const moment = require('moment');
 let AudioMixer = require('audio-mixer');
 const fs = require('fs');
 const Lame = require('node-lame').Lame;
+// const exec = require('child_process').exec
 
+let date;
 const join = require('./join.js');
 module.exports = {
 	name: 'record',
@@ -11,6 +13,7 @@ module.exports = {
     args: false,
 	usage: `The command is guild only. And before **record**, you should have the bot connected to a voice channel by using the **join** command.`,
     guildOnly: true,
+    pcm2mp3,
 	execute(message, args) {
         connection = join.getConnection();
         console.log('开始录音\n', connection);
@@ -22,10 +25,10 @@ module.exports = {
             return message.channel.send(`The bot is recording in ${join.getChannel().name} channel! If you want another recording, you should **stop** it first.`);
         }
         
-        connection.play('../audios/init.mp3', { volume: 0.8 });
+        connection.play('./audios/init.mp3', { volume: 0.01 });
 
         message.channel.send('Start recording···');
-        const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+        date = moment(new Date()).format('YYYY-MM-DD HH-mm-ss');
         join.setRecordStatus(true);
         audioWriteStream = fs.createWriteStream(`./audios/${date}.pcm`);
         let mixer = new AudioMixer.Mixer({
@@ -63,25 +66,44 @@ module.exports = {
         }, 2000, inputSet);
 
         mixer.pipe(audioWriteStream);
+
+        // connection.on('disconnect', ()=>{
+        //     if (join.getRecordStatus()) {
+        //         join.setRecordStatus(false);
+        //         join.destroyConnection();
+        //         join.getChannel().leave();
+        //         join.destroyChannel();
+        //         setTimeout(() => {
+        //             pcm2mp3();
+        //         }, 5000);
+        //         return;
+        //     }
+        // });
+
     },
 };
 
 function pcm2mp3() {
     const encoder = new Lame({
-        'raw': true,
-        'sfreq': 48,
-        'bitwidth': 16,
-        'signed': true,
-        'little-endian': true,
-        'mode': 's',
+        raw: true,
+        sfreq: 48,
+        mode: 's',
 
-        'output': `../audios/${date}.mp3`,
-        'bitrate': 192
-    }).setFile(`../audios/${date}.pcm`);
+        output: `./audios/${date}.mp3`,
+        bitrate: 192
+    }).setFile(`./audios/${date}.pcm`);
     
     encoder.encode()
         .then(() => {
             console.log('音频转换成功！');
+            // let cmdStr = `rm -f ./audios/${date}.pcm`;
+            // exec(cmdStr, function (err, stdout, srderr) {
+            //     if (err) {
+            //         console.log(srderr);
+            //     } else {
+            //         console.log(stdout);
+            //     }
+            // });
         })
         .catch((error) => {
             console.log(`音频转换失败！\n${error}`);

@@ -40,13 +40,15 @@ module.exports = {
 		
 		message.channel.send('The bot has joined in the voice channel. It\'s waiting for connection established...');
 		
-		voiceChannel.join().then(con=>{
-			voiceConnection = con;
-			message.channel.send('The bot has connected to the voice channel.');
-			return;
-		}).catch(error=>{
+		connect(voiceChannel, message.channel).catch(error=>{
 			message.channel.send(`Connection timeout. Please **leave** the channel and try again!`);
 			console.log(`连接超时\n`, error);
 		});
+		
 	},
 };
+
+async function connect(voiceChannel, txChannel){
+	voiceConnection = await voiceChannel.join();
+	txChannel.send('The bot has connected to the voice channel.');
+}

@@ -1,6 +1,7 @@
 const Lame = require('node-lame').Lame;
 
 const join = require('./join.js');
+const record = require('./record.js');
 module.exports = {
 	name: 'stop',
     description: 'Command the bot to stop recording or leave the voice channel.',
@@ -20,6 +21,9 @@ module.exports = {
             message.channel.send(`The bot has stopped recording and left ${channel.name} channel!`);
             channel.leave();
             join.destroyChannel();
+            setTimeout(() => {
+                record.pcm2mp3();
+            }, 5000);
             return;
         }
 
@@ -38,6 +42,5 @@ module.exports = {
         }
 	},
 };
-
 
 

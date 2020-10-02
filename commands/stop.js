@@ -1,28 +1,25 @@
-const Lame = require('node-lame').Lame;
-
-const join = require('./join.js');
 const record = require('./record.js');
 module.exports = {
 	name: 'stop',
     description: 'Command the bot to stop recording or leave the voice channel.',
-    aliases: ['停止录音','leave'],
+    aliases: ['leave','停止录音'],
     args: false,
-	usage: `The command is guild only. And it only works while the bot is in a voice channel. For more usage information, look up the **join** command.`,
+	usage: `The command is guild only. And it only works while the bot is in a voice channel. For more usage information, look up the **record** command.`,
     guildOnly: true,
 	execute(message, args) {
-        channel = join.getChannel();
-        connection = join.getConnection();
+        channel = record.getChannel();
+        connection = record.getConnection();
         console.log('停止录音\n', channel, connection);
 
-        if (join.getRecordStatus()) {
-            join.setRecordStatus(false);
+        if (record.getRecordStatus()) {
+            record.setRecordStatus(false);
             connection.disconnect();
-            join.destroyConnection();
+            record.setConnection(0);
             message.channel.send(`The bot has stopped recording and left ${channel.name} channel!`);
             channel.leave();
-            join.destroyChannel();
+            record.setChannel(0);
             setTimeout(() => {
-                record.pcm2mp3();
+                clearInterval(record.getTimeInterval());
             }, 5000);
             return;
         }
@@ -30,15 +27,15 @@ module.exports = {
         if (channel) {
             if (connection) {
                 connection.disconnect();
-                join.destroyConnection();
+                record.setConnection(0);
             }
             message.channel.send(`The bot has left ${channel.name} channel!`);
             channel.leave();
-            join.destroyChannel();
+            record.setChannel(0);
             return;
         }
         if (!channel) {
-            return message.channel.send('The command doesn\'t work while the bot has not joined in any voice channel yet!');
+            return message.channel.send('This command doesn\'t work while the bot has not joined in any voice channel yet!');
         }
 	},
 };

@@ -42,6 +42,7 @@ module.exports = {
     args: false,
 	usage: `The bot will start recording by using the **record**(or it\'s alias: **start**) command and stop recording by **stop**(alias: **leave**) command. Before **record**, you should join in a voice channel of the guild so that the bot can know which voice channel to follow in and start recording. After **stop** recoding, the bot will **leave** the voice channel. In addition, the both commands are guild only, which means they\'re used only inside servers and won't work whatsoever in DMs.`,
 	guildOnly: true,
+	cooldown: 180,
 	voiceChannel,
 	voiceConnection,
 	isRecording: false,
@@ -134,10 +135,8 @@ module.exports = {
             mixer.pipe(outputStream.stdin);
             outputStream.stdout.pipe(process.stdout, { end: false })
             outputStream.stderr.pipe(process.stderr, { end: false })
-
 		});
-
-
+		
 	},
 };
 

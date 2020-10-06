@@ -4,7 +4,7 @@ module.exports = {
     description: 'Command the bot to stop recording or leave the voice channel.',
     aliases: ['leave','停止录音'],
     args: false,
-	usage: `The command is guild only. And it only works while the bot is in a voice channel. For more usage information, look up the **record** command.`,
+	usage: `The command is guild only. And it only works while the bot is in a voice channel. For more usage information, look up the \`record\` command.`,
     guildOnly: true,
 	execute(message, args) {
         channel = record.getChannel();
@@ -12,15 +12,7 @@ module.exports = {
         console.log('停止录音\n', channel, connection);
 
         if (record.getRecordStatus()) {
-            record.setRecordStatus(false);
-            connection.disconnect();
-            record.setConnection(0);
-            message.channel.send(`The bot has stopped recording and left ${channel.name} channel!`);
-            channel.leave();
-            record.setChannel(0);
-            setTimeout(() => {
-                clearInterval(record.getTimeInterval());
-            }, 5000);
+            record.manualStopRecord(message);
             return;
         }
 
@@ -34,6 +26,7 @@ module.exports = {
             record.setChannel(0);
             return;
         }
+        
         if (!channel) {
             return message.channel.send('This command doesn\'t work while the bot has not joined in any voice channel yet!');
         }

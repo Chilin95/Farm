@@ -132,7 +132,30 @@ module.exports = {
 			//监听连接断开
 			connection.on('disconnect', ()=>{
 				message.author.send(`The recording has been interrupted! Please ignore if it is stopped manually.`);
-				//同时私信下载mp3的URL？;
+				//私信mp3文件
+				message.author.send({
+					files: [{
+						attachment: `./audios/${filename}.mp3`,
+						name: `${filename}.mp3`
+					}]
+				})
+				.then(console.log)
+				.catch(console.error);
+				
+				let memberObj= {
+					Recorder : message.author.username+'#'+message.author.discriminator,
+					DateTime: filename,
+					ParticipantsNum: memberMap.size
+				};
+				for (let[k,v] of memberMap) {
+					memberObj[k] = v;
+				}
+				const memberStr = JSON.stringify(memberObj);
+				
+				fs.writeFile(`./audios/${filename}.json`, memberStr, 'utf8', (err) => {
+					if (err) throw err;
+					console.log('此次参会成员数据已写入文件');
+				});
 			});
 			//间隔10s移除一次mixer中的无效input
 			timeInterval = setInterval((inputs) => {
@@ -155,12 +178,25 @@ module.exports = {
             ])
 			mixer.pipe(outputStream.stdin);
 			//写入本地文件
-			const fileStream = fs.createWriteStream(`./audios/${voiceChannel.name} ${new Date()
+			const filename = `${voiceChannel.name}_${new Date()
 				.toLocaleDateString(undefined, {year: 'numeric', month: '2-digit', day: '2-digit',
 				hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short', hour12: false})
-				.replace(/[\/:]/g, '-').replace(/\s/, '<').replace(/\s/, '>')}${(Math.random().toFixed(3)+'').substr(2)}.mp3`);
+				.replace(/[\/:]/g, '-').replace(/\s/g, '_')}${(Math.random().toFixed(3)+'').substr(2)}`;
+			const fileStream = fs.createWriteStream(`./audios/${filename}.mp3`);
 			outputStream.stdout.pipe(fileStream, { end: false });
-			outputStream.stderr.pipe(process.stderr, { end: false })
+			outputStream.stderr.pipe(process.stderr, { end: false });
+
+			let memberMap = new Map();
+			channel.members.forEach(member=>{
+				const joinedUser = member.user;
+				memberMap.set(joinedUser.id, joinedUser.username+'#'+joinedUser.discriminator);
+			});
+			message.client.on('voiceStateUpdate', (oldState, newState)=>{
+				if (oldState.channelID !== channel.id && newState.channelID === channel.id) {
+					const addUser = newState.member.user;
+					memberMap.set(addUser.id, addUser.username+'#'+addUser.discriminator);
+				}
+			});
 		});
 
 	},

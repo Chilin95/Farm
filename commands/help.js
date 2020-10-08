@@ -3,7 +3,7 @@ module.exports = {
 	name: 'help',
 	description: 'List all of my commands or info about a specific command.',
 	aliases: ['commands'],
-	usage: '[command name...]',
+	usage: `\`!help [...command]\``,
 	execute(message, args) {
 		const { commands } = message.client;
 		const invalid = [];

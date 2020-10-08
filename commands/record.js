@@ -139,7 +139,11 @@ module.exports = {
 						name: `${filename}.mp3`
 					}]
 				})
-				.then(console.log)
+				.then((data)=>{
+					console.log(data);
+					message.author.send(`Download link of **${filename}** Recording: ${data.attachments.first().url}`)
+					.then().catch(console.error);
+				})
 				.catch(console.error);
 				
 				let memberObj= {

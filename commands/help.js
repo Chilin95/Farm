@@ -44,6 +44,8 @@ module.exports = {
 			data.push(`**Cooldown:** ${command.cooldown || 3} second(s)\n`);
 			message.channel.send(data, { split: true });
 		}
-		message.channel.send(invalid, { split: true });
+		if (!invalid) {
+			message.channel.send(invalid, { split: true });
+		}
 	},
 };

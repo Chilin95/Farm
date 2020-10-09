@@ -201,7 +201,7 @@ module.exports = {
 				memberMap.set(joinedUser.id, joinedUser.username+'#'+joinedUser.discriminator);
 			});
 			message.client.on('voiceStateUpdate', (oldState, newState)=>{
-				if (oldState.channelID !== channel.id && newState.channelID === channel.id) {
+				if (channel && oldState.channelID !== channel.id && newState.channelID === channel.id) {
 					const addUser = newState.member.user;
 					memberMap.set(addUser.id, addUser.username+'#'+addUser.discriminator);
 				}

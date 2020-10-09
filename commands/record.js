@@ -32,21 +32,20 @@ class myMixer extends AudioMixer.Mixer{
 }
 
 let voiceChannel;
-let voiceConnection;
 let isRecording = false;
 let timeInterval;
 let outputStream;
+let stopper = 'Abnormal stop';
 function getChannel(){return voiceChannel;}
 function setChannel(obj){voiceChannel = obj}
-function getConnection(){return voiceConnection;}
-function setConnection(obj){voiceConnection = obj}
 function getRecordStatus(){return isRecording;}
 function setRecordStatus(status){isRecording = status;}
-function manualStopRecord(message){
+function getStopper(){return stopper;}
+function setStopper(str){stopper = str}
+function manualStopRecord(stopMessage){
+	setStopper(stopMessage.author.username+'#'+stopMessage.author.discriminator);
 	setRecordStatus(false);
-	voiceConnection.disconnect();
-	setConnection(0);
-	message.channel.send(`The bot has stopped recording and left ${voiceChannel.name} channel!`);
+	stopMessage.channel.send(`The bot has stopped recording and left ${voiceChannel.name} channel!`);
 	voiceChannel.leave();
 	setChannel(0);
 	setTimeout(() => {
@@ -65,24 +64,22 @@ module.exports = {
 	cooldown: 15,
 	getChannel,
 	setChannel,
-	getConnection,
-	setConnection,
 	getRecordStatus,
 	setRecordStatus,
 	manualStopRecord,
 	execute(message, args) {
 		lastChannel = getChannel();
-        lastConnection = getConnection();
-		console.log('已连接的语音频道\n', lastChannel, lastConnection);
 
 		if (getRecordStatus()) {
 			message.channel.send(`The bot is recording in ${lastChannel.name} channel! If you want to start another recording, you should \`stop\` it first.`);
-            return;
+			console.log('已连接的语音频道:', lastChannel.name);
+			return;
         }
 
         if (lastChannel) {
             message.channel.send(`The bot is in ${lastChannel.name} channel! If you want to join in another one, you should \`leave\` it first.`);
-            return;
+			console.log('已连接的语音频道:', lastChannel.name);
+			return;
 		}
 		
 		channel = message.member.voice.channel;
@@ -90,7 +87,7 @@ module.exports = {
 			message.channel.send(`Please join in a voice channel first!`);
 			return;
 		}
-		console.log('加入语音频道\n', channel);
+		console.log('加入语音频道:', channel.name);
 		setChannel(channel);
 		
 		//创建语音连接
@@ -99,9 +96,8 @@ module.exports = {
 			console.log(`连接失败\n`, err);
 		}).then(con=>{
 			connection = con;
-			setConnection(con);
 			connection.play('./audios/00_empty.mp3', { volume: 0.01 });
-			console.log('开始录音\n', connection);
+			console.log('开始录音...');
 			message.channel.send('Start recording···');
 			setRecordStatus(true);
 			let mixer = new myMixer({
@@ -132,7 +128,7 @@ module.exports = {
 			//监听连接断开
 			connection.on('disconnect', ()=>{
 				message.author.send(`The recording has been interrupted! Please ignore if it is stopped manually.`);
-				//私信mp3文件
+				//向recorder私信mp3文件
 				message.author.send({
 					files: [{
 						attachment: `./audios/${filename}.mp3`,
@@ -140,14 +136,14 @@ module.exports = {
 					}]
 				})
 				.then((data)=>{
-					console.log(data);
 					message.author.send(`Download link of **${filename}** Recording: ${data.attachments.first().url}`)
 					.then().catch(console.error);
 				})
 				.catch(console.error);
-				
+				//记录参会成员
 				let memberObj= {
 					Recorder : message.author.username+'#'+message.author.discriminator,
+					Stopper: getStopper(),
 					DateTime: filename,
 					ParticipantsNum: memberMap.size
 				};
@@ -159,7 +155,16 @@ module.exports = {
 				fs.writeFile(`./audios/${filename}.json`, memberStr, 'utf8', (err) => {
 					if (err) throw err;
 					console.log('此次参会成员数据已写入文件');
+					//向recorder私信参会成员文件
+					message.author.send({
+						files: [{
+							attachment: `./audios/${filename}.json`,
+							name: `Participants_Record_${filename}.json`
+						}]
+					})
+					.then().catch(console.error);
 				});
+
 			});
 			//间隔10s移除一次mixer中的无效input
 			timeInterval = setInterval((inputs) => {
@@ -189,7 +194,7 @@ module.exports = {
 			const fileStream = fs.createWriteStream(`./audios/${filename}.mp3`);
 			outputStream.stdout.pipe(fileStream, { end: false });
 			outputStream.stderr.pipe(process.stderr, { end: false });
-
+			//统计参会成员
 			let memberMap = new Map();
 			channel.members.forEach(member=>{
 				const joinedUser = member.user;

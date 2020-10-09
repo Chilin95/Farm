@@ -8,8 +8,7 @@ module.exports = {
     guildOnly: true,
 	execute(message, args) {
         channel = record.getChannel();
-        connection = record.getConnection();
-        console.log('停止录音\n', channel, connection);
+        console.log('停止录音:', channel.name);
 
         if (record.getRecordStatus()) {
             record.manualStopRecord(message);
@@ -17,10 +16,6 @@ module.exports = {
         }
 
         if (channel) {
-            if (connection) {
-                connection.disconnect();
-                record.setConnection(0);
-            }
             message.channel.send(`The bot has left ${channel.name} channel!`);
             channel.leave();
             record.setChannel(0);

@@ -7,25 +7,26 @@ module.exports = {
 	usage: `The command is guild only. And it only works while the bot is in a voice channel. For more usage information, look up the \`record\` command.`,
     guildOnly: true,
 	execute(message, args) {
-        channel = record.getChannel();
-        console.log('停止录音:', channel.name);
+        const guildId = message.guild.id;
+        const guildName = message.guild.name;
+        const voiceChannel = record.getChannel(guildId);
 
-        if (record.getRecordStatus()) {
+        if (record.getRecordStatus(guildId)) {
             record.manualStopRecord(message);
+            console.log('停止录音:',guildName, voiceChannel.name);
             return;
         }
 
-        if (channel) {
-            message.channel.send(`The bot has left ${channel.name} channel!`);
-            channel.leave();
-            record.setChannel(0);
+        if (voiceChannel) {
+            message.channel.send(`The bot has left **${voiceChannel.name}** channel!`);
+            voiceChannel.leave();
+            record.removeChannel(guildId);
+            console.log('停止录音:',guildName, voiceChannel.name);
             return;
         }
         
-        if (!channel) {
+        if (!voiceChannel) {
             return message.channel.send('This command doesn\'t work while the bot has not joined in any voice channel yet!');
         }
 	},
 };
-
-

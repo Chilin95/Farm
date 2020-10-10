@@ -31,28 +31,28 @@ class myMixer extends AudioMixer.Mixer{
     }
 }
 
-let voiceChannel;
-let isRecording = false;
-let timeInterval;
-let outputStream;
+let channelMap = new Map();
+let isRecordingMap = new Map();
 let stopper = 'Abnormal stop';
-function getChannel(){return voiceChannel;}
-function setChannel(obj){voiceChannel = obj}
-function getRecordStatus(){return isRecording;}
-function setRecordStatus(status){isRecording = status;}
-function getStopper(){return stopper;}
-function setStopper(str){stopper = str}
+function getChannel(guildId){return channelMap.get(guildId);}
+function setChannel(guildId, channel){channelMap.set(guildId, channel);}
+function removeChannel(guildId){channelMap.delete(guildId);}
+function getRecordStatus(guildId){return isRecordingMap.get(guildId);}
 function manualStopRecord(stopMessage){
-	setStopper(stopMessage.author.username+'#'+stopMessage.author.discriminator);
-	setRecordStatus(false);
-	stopMessage.channel.send(`The bot has stopped recording and left ${voiceChannel.name} channel!`);
+	const stopGuildId = stopMessage.guild.id;
+	const voiceChannel = getChannel(stopGuildId);
+	stopper = stopMessage.author.username+'#'+stopMessage.author.discriminator+'('+stopMessage.author.id+')';
+	isRecordingMap.delete(stopGuildId);
+	stopMessage.channel.send(`The bot has stopped recording and left **${voiceChannel.name}** channel!`);
 	voiceChannel.leave();
-	setChannel(0);
-	setTimeout(() => {
-		clearInterval(timeInterval);
-		outputStream.kill();
-	}, 3000);
+	removeChannel(stopGuildId);
 	return;
+}
+function dateTime(date){
+	return date
+	.toLocaleDateString(undefined, {year: 'numeric', month: '2-digit', day: '2-digit',
+	hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short', hour12: false})
+	.replace(/[\/:]/g, '-').replace(/\s/g, '_');
 }
 module.exports = {
 	name: 'record',
@@ -64,42 +64,44 @@ module.exports = {
 	cooldown: 15,
 	getChannel,
 	setChannel,
+	removeChannel,
 	getRecordStatus,
-	setRecordStatus,
 	manualStopRecord,
 	execute(message, args) {
-		lastChannel = getChannel();
+		const guildId = message.guild.id;
+		const guildName = message.guild.name;
+		const lastChannel = getChannel(guildId);
 
-		if (getRecordStatus()) {
-			message.channel.send(`The bot is recording in ${lastChannel.name} channel! If you want to start another recording, you should \`stop\` it first.`);
-			console.log('已连接的语音频道:', lastChannel.name);
+		if (getRecordStatus(guildId)) {
+			message.channel.send(`The bot is recording in **${lastChannel.name}** channel! If you want to start another recording, you should \`stop\` it first.`);
+			console.log('已连接的语音频道:', guildName, lastChannel.name);
 			return;
         }
 
         if (lastChannel) {
-            message.channel.send(`The bot is in ${lastChannel.name} channel! If you want to join in another one, you should \`leave\` it first.`);
-			console.log('已连接的语音频道:', lastChannel.name);
+            message.channel.send(`The bot is in **${lastChannel.name}** channel! If you want to join in another one, you should \`leave\` it first.`);
+			console.log('已连接的语音频道:', guildName, lastChannel.name);
 			return;
 		}
 		
-		channel = message.member.voice.channel;
+		const channel = message.member.voice.channel;
 		if (!channel) {
 			message.channel.send(`Please join in a voice channel first!`);
 			return;
 		}
-		console.log('加入语音频道:', channel.name);
-		setChannel(channel);
+		console.log('加入语音频道:', guildName, channel.name);
+		setChannel(guildId, channel);
 		
 		//创建语音连接
 		channel.join().catch(err=>{
 			message.channel.send(`Connection timeout. Please \`leave\` this channel and try again later!`);
-			console.log(`连接失败\n`, err);
+			console.log('连接失败!\n', guildName, channel.name, '\n', err);
 		}).then(con=>{
 			connection = con;
-			connection.play('./audios/00_empty.mp3', { volume: 0.01 });
-			console.log('开始录音...');
-			message.channel.send('Start recording···');
-			setRecordStatus(true);
+			connection.play('./commands/00_empty.mp3', { volume: 0.01 });
+			console.log('开始录音...', guildName, channel.name);
+			message.channel.send(`**${channel.name}** Start recording...`);
+			isRecordingMap.set(guildId, true);
 			let mixer = new myMixer({
 				channels: 2,
 				bitDepth: 16,
@@ -125,49 +127,8 @@ module.exports = {
 					audioStream.pipe(input);
 				}
 			});
-			//监听连接断开
-			connection.on('disconnect', ()=>{
-				message.author.send(`The recording has been interrupted! Please ignore if it is stopped manually.`);
-				//向recorder私信mp3文件
-				message.author.send({
-					files: [{
-						attachment: `./audios/${filename}.mp3`,
-						name: `${filename}.mp3`
-					}]
-				})
-				.then((data)=>{
-					message.author.send(`Download link of **${filename}** Recording: ${data.attachments.first().url}`)
-					.then().catch(console.error);
-				})
-				.catch(console.error);
-				//记录参会成员
-				let memberObj= {
-					Recorder : message.author.username+'#'+message.author.discriminator,
-					Stopper: getStopper(),
-					DateTime: filename,
-					ParticipantsNum: memberMap.size
-				};
-				for (let[k,v] of memberMap) {
-					memberObj[k] = v;
-				}
-				const memberStr = JSON.stringify(memberObj);
-				
-				fs.writeFile(`./audios/${filename}.json`, memberStr, 'utf8', (err) => {
-					if (err) throw err;
-					console.log('此次参会成员数据已写入文件');
-					//向recorder私信参会成员文件
-					message.author.send({
-						files: [{
-							attachment: `./audios/${filename}.json`,
-							name: `Participants_Record_${filename}.json`
-						}]
-					})
-					.then().catch(console.error);
-				});
-
-			});
 			//间隔10s移除一次mixer中的无效input
-			timeInterval = setInterval((inputs) => {
+			const timeInterval = setInterval((inputs) => {
 				inputs.forEach((input) => {
 					if (new Date().getTime() - input.lastDataTime >= AudioMixer.Mixer.INPUT_IDLE_TIMEOUT) {
 						input.destroy();
@@ -177,7 +138,7 @@ module.exports = {
 				});
 			}, 10000, inputSet);
 			//pcm to mp3
-			outputStream = spawn(require('ffmpeg-static'), [
+			const outputStream = spawn(require('ffmpeg-static'), [
                 '-f', 's16le', // Input is signed 16-bit little-endian raw PCM
                 '-ac', '2', // Input channels
                 '-ar', '48000', // Input sample rate
@@ -187,29 +148,110 @@ module.exports = {
             ])
 			mixer.pipe(outputStream.stdin);
 			//写入本地文件
-			const filename = `${voiceChannel.name}_${new Date()
-				.toLocaleDateString(undefined, {year: 'numeric', month: '2-digit', day: '2-digit',
-				hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short', hour12: false})
-				.replace(/[\/:]/g, '-').replace(/\s/g, '_')}${(Math.random().toFixed(3)+'').substr(2)}`;
+			const startTime = new Date();
+			const filename = `${channel.name}_${dateTime(startTime)}${(Math.random().toFixed(3)+'').substring(2)}`;
 			const fileStream = fs.createWriteStream(`./audios/${filename}.mp3`);
 			outputStream.stdout.pipe(fileStream, { end: false });
 			outputStream.stderr.pipe(process.stderr, { end: false });
+
 			//统计参会成员
 			let memberMap = new Map();
+			//设置初始时长为0, 记录上次加入语音房的时间
 			channel.members.forEach(member=>{
 				const joinedUser = member.user;
-				memberMap.set(joinedUser.id, joinedUser.username+'#'+joinedUser.discriminator);
+				memberMap.set(joinedUser.id, [joinedUser.username+'#'+joinedUser.discriminator, 0, startTime]);
 			});
+			//更新进入语音房的在线时长
 			message.client.on('voiceStateUpdate', (oldState, newState)=>{
 				if (channel && oldState.channelID !== channel.id && newState.channelID === channel.id) {
 					const addUser = newState.member.user;
-					memberMap.set(addUser.id, addUser.username+'#'+addUser.discriminator);
+					const joinUser = memberMap.get(addUser.id);
+					const nowTime = new Date();
+					if (joinUser) {
+						memberMap.set(addUser.id, [addUser.username+'#'+addUser.discriminator, joinUser[1], nowTime]);
+					} else {
+						memberMap.set(addUser.id, [addUser.username+'#'+addUser.discriminator, 0, nowTime]);
+					}
 				}
 			});
+			//更新离开语音房的在线时长
+			message.client.on('voiceStateUpdate', (oldState, newState)=>{
+				if (channel && oldState.channelID === channel.id && newState.channelID !== channel.id) {
+					const addUser = newState.member.user;
+					const leftUser = memberMap.get(addUser.id);
+					const now = new Date();
+					if (leftUser) {
+						onlineTime = leftUser[1] + (now-leftUser[2])/1000;
+						memberMap.set(addUser.id, [addUser.username+'#'+addUser.discriminator, onlineTime, leftUser[2]]);
+					} else {
+						memberMap.set(addUser.id, [addUser.username+'#'+addUser.discriminator, 0, now]);
+					}
+				}
+			});
+
+
+			//监听连接断开
+			connection.on('disconnect', ()=>{
+				message.author.send(`The recording of **${channel.name}** has been interrupted! Please ignore if it is stopped manually.`);
+				//向stater私信mp3文件
+				setTimeout(() => {
+					clearInterval(timeInterval);
+					outputStream.kill();
+					message.author.send({
+						files: [{
+							attachment: `./audios/${filename}.mp3`,
+							name: `${filename}.mp3`
+						}]
+					})
+					.then((data)=>{
+						message.author.send(`Download link of **${filename}** Recording: ${data.attachments.first().url}`)
+						.then().catch(console.error);
+					})
+					.catch(console.error);
+				}, 2000);
+				
+				//记录参会成员
+				const endTime = new Date();
+				//对还没离开房间的用户更新时长
+				channel.members.forEach(member=>{
+					const stationUser = member.user;
+					const updateUser = memberMap.get(stationUser.id);
+					onlineTime = updateUser[1] + (endTime-updateUser[2])/1000;
+					memberMap.set(stationUser.id, [stationUser.username+'#'+stationUser.discriminator, onlineTime, updateUser[2]]);
+				});
+				let memberObj = {'userId': ['userName', 'onlineTime/seconds', 'The last timestamp of join in the voiceChannel']};
+				for (let[k,v] of memberMap) {
+					memberObj[k] = [v[0], v[1], dateTime(v[2])];
+				}
+				let recordObj= {
+					GuildName: guildName+'('+guildId+')',
+					VoiceChannel: filename.substring(0, filename.indexOf('_')),
+					ParticipantsNum: memberMap.size,
+					Starter : message.author.username+'#'+message.author.discriminator+'('+message.author.id+')',
+					Stopper: stopper,
+					StartTime: dateTime(startTime),
+					EndTime: dateTime(endTime),
+					members: memberObj
+				};
+				const recordStr = JSON.stringify(recordObj, null, '\t');
+				
+				fs.writeFile(`./audios/${filename}.json`, recordStr, 'utf8', (err) => {
+					if (err) throw err;
+					console.log('参会成员数据已写入文件', guildName, filename.substring(0, filename.indexOf('_')));
+					//向starter私信参会成员文件
+					message.author.send({
+						files: [{
+							attachment: `./audios/${filename}.json`,
+							name: `${filename}.json`
+						}]
+					})
+					.then().catch(console.error);
+				});
+
+			});
+			
 		});
 
 	},
+
 };
-
-
-

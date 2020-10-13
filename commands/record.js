@@ -35,6 +35,7 @@ let channelMap = new Map();
 let isRecordingMap = new Map();
 let stopper = 'Abnormal stop';
 function getChannel(guildId){return channelMap.get(guildId);}
+function delChannel(guildId){channelMap.delete(guildId);}
 function getRecordStatus(guildId){return isRecordingMap.get(guildId);}
 function manualStopRecord(stopMessage){
 	const voiceChannel = getChannel(stopMessage.guild.id);
@@ -58,6 +59,7 @@ module.exports = {
 	guildOnly: true,
 	cooldown: 15,
 	getChannel,
+	delChannel,
 	getRecordStatus,
 	manualStopRecord,
 	execute(message, args) {

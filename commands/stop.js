@@ -20,6 +20,7 @@ module.exports = {
         if (voiceChannel) {
             message.channel.send(`The bot has left **${voiceChannel.name}** channel!`);
             voiceChannel.leave();
+            record.deleteChannel(guildId);
             console.log('停止录音:',guildName, voiceChannel.name);
             return;
         }

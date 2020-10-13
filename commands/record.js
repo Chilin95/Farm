@@ -1,6 +1,13 @@
 const AudioMixer = require('audio-mixer');
 const spawn = require('child_process').spawn;
+// const fork = require('child_process').fork;
+// const forked = fork('./commands/download_child.js');
+// forked.on('error', async error => {
+// 	console.log('下载服务子进程错误：\n', error);
+// 	forked.kill();
+// });
 const fs = require('fs');
+
 
 class myMixer extends AudioMixer.Mixer{
 	constructor(args) {
@@ -34,7 +41,9 @@ class myMixer extends AudioMixer.Mixer{
 let channelMap = new Map();
 let isRecordingMap = new Map();
 let stopper = 'Abnormal stop';
+
 function getChannel(guildId){return channelMap.get(guildId);}
+function deleteChannel(guildId){channelMap.delete(guildId);}
 function getRecordStatus(guildId){return isRecordingMap.get(guildId);}
 function manualStopRecord(stopMessage){
 	const voiceChannel = getChannel(stopMessage.guild.id);
@@ -58,6 +67,7 @@ module.exports = {
 	guildOnly: true,
 	cooldown: 15,
 	getChannel,
+	deleteChannel,
 	getRecordStatus,
 	manualStopRecord,
 	execute(message, args) {
@@ -190,26 +200,17 @@ module.exports = {
 				setTimeout(() => {
 					clearInterval(timeInterval);
 				}, 10000);
-				message.author.send(`The recording of **${channel.name}** has been interrupted! Please ignore if it is stopped manually.`);
-				const stopGuildId = message.guild.id;
-				isRecordingMap.delete(stopGuildId);
-				channelMap.delete(stopGuildId);
-				//向starter私信mp3文件
 				setTimeout(() => {
 					//2s后杀掉子进程，保证语音数据都写入到本地mp3文件
 					outputStream.kill();
-					message.author.send({
-						files: [{
-							attachment: `./audios/${filename}.mp3`,
-							name: `${filename}.mp3`
-						}]
-					})
-					.then((data)=>{
-						message.author.send(`Download link of **${filename}** Recording: ${data.attachments.first().url}`)
-						.then().catch(console.error);
-					})
-					.catch(console.error);
 				}, 2000);
+				const stopGuildId = message.guild.id;
+				isRecordingMap.delete(stopGuildId);
+				channelMap.delete(stopGuildId);
+				//向starter私信mp3文件链接
+				message.author.send(`The recording of **${channel.name}** has been interrupted! Please ignore if it is stopped manually.`
+				+ `\nDownload link of **${filename}** Recording: http://localhost:7777/audios/${filename}`);
+				// forked.send(filename);
 				
 				//生成参会记录json文件
 				const endTime = new Date();

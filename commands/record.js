@@ -1,13 +1,6 @@
 const AudioMixer = require('audio-mixer');
 const spawn = require('child_process').spawn;
-// const fork = require('child_process').fork;
-// const forked = fork('./commands/download_child.js');
-// forked.on('error', async error => {
-// 	console.log('下载服务子进程错误：\n', error);
-// 	forked.kill();
-// });
 const fs = require('fs');
-
 
 class myMixer extends AudioMixer.Mixer{
 	constructor(args) {
@@ -23,7 +16,7 @@ class myMixer extends AudioMixer.Mixer{
                 if (input.hasData) {
                     let inputBuffer = this.args.channels === 1 ? input.readMono(samples) : input.readStereo(samples);
                     for (let i = 0; i < samples * this.args.channels; i++) {
-                        let sample = this.readSample.call(mixedBuffer, i * this.sampleByteLength) + Math.floor(this.readSample.call(inputBuffer, i * this.sampleByteLength));
+                        let sample = this.readSample.call(mixedBuffer, i * this.sampleByteLength) + Math.floor(this.readSample.call(inputBuffer, i * this.sampleByteLength))/2;
                         this.writeSample.call(mixedBuffer, sample, i * this.sampleByteLength);
                     }
                 }
@@ -209,8 +202,7 @@ module.exports = {
 				channelMap.delete(stopGuildId);
 				//向starter私信mp3文件链接
 				message.author.send(`The recording of **${channel.name}** has been interrupted! Please ignore if it is stopped manually.`
-				+ `\nDownload link of **${filename}** Recording: http://localhost:7777/audios/${filename}`);
-				// forked.send(filename);
+				+ `\nDownload link of **${filename}** Recording: `);
 				
 				//生成参会记录json文件
 				const endTime = new Date();

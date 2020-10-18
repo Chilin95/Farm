@@ -10,7 +10,7 @@ class myMixer extends AudioMixer.Mixer{
 	_read() {
         let samples = this.getMaxSamples();
         if (samples > 0 && samples !== Number.MAX_VALUE) {
-            let mixedBuffer = new Buffer(samples * this.sampleByteLength * this.args.channels);
+            let mixedBuffer = Buffer.alloc(samples * this.sampleByteLength * this.args.channels);
             mixedBuffer.fill(0);
             this.inputs.forEach((input) => {
                 if (input.hasData) {
@@ -141,6 +141,8 @@ module.exports = {
                 '-ac', '2', // Input channels
                 '-ar', '48000', // Input sample rate
 				'-i', '-', // Get from stdin
+				'-filter:a', 'atempo=0.9',
+				// '-af', 'lowpass=2000,highpass=200',
 				'-f', 'mp3', //MP3 container
 				'-', // stdout
             ])
